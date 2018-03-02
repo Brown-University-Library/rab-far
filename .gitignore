@@ -1,1 +1,3 @@
-far_tables.txt
+venv/
+data/*
+dump-tables.vars.sh
