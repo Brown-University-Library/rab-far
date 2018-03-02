@@ -1,10 +1,18 @@
 source dump-tables.vars.sh
 
-mysql -h ${DBLOC} -u ${USER} --password="${PASSW}" ${DBNAME} -e "SHOW TABLES" > ${DATADIR}/${TABLES}
+if [ ! -d data ]; then
+  mkdir data;
+fi
 
-tail --lines=+2 ${DATADIR}/${TABLES} | while IFS='' read -r table
+if [ ! -d data/far-tables ]; then
+  mkdir data/far-tables;
+fi
+
+mysql -h ${DBLOC} -u ${USER} --password="${PASSW}" ${DBNAME} -e "SHOW TABLES" > data/far-tables.txt
+
+tail --lines=+2 data/far-tables.txt | while IFS='' read -r table
 do
   echo "$table" && \
-  mysql -h ${DBLOC} -u ${USER} --password="${PASSW}" ${DBNAME} -e "SELECT * FROM $table" > ${DATADIR}/$table.csv && \
+  mysql -h ${DBLOC} -u ${USER} --password="${PASSW}" ${DBNAME} -e "SELECT * FROM $table" > data/far-tables/$table.csv && \
   sleep 2;
 done
