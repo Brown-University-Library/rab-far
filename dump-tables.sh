@@ -1,29 +1,39 @@
-source dump-tables.vars.sh
+# Requires user, password, db name, and data directory values
+# Expects localhost for MySQL server
+source dump-tables.vars.sh 
+# Directory for storing output CSV files
+far_dir="${DATADIR}/far-tables";
 
-if [ ! -d data ]; then
-  mkdir data;
+if [ ! -d ${DATADIR} ]; then
+  mkdir ${DATADIR};
 fi
 
-if [ ! -d data/far-tables ]; then
-  mkdir data/far-tables;
+if [ ! -d ${far_dir} ]; then
+  mkdir ${far_dir};
 fi
 
-mysql -h ${DBLOC} -u ${USER} --password="${PASSW}" ${DBNAME} -e "SHOW TABLES" > data/far-tables.txt
+# Necessary for MySQL 'INTO OUTFILE' command
+# May be unnecessary with better MySQL configuration
+chmod -R 777 ${DATADIR};
 
-tail --lines=+2 data/far-tables.txt | while IFS='' read -r table
+# Get table names
+mysql -u ${USER} --password="${PASSW}" ${DBNAME} -e "SHOW TABLES" > ${DATADIR}/far-tables.txt
+
+#Iterate through tablenames; 'tail -n +2' skips the first line
+tail --lines=+2 ${DATADIR}/far-tables.txt | while IFS='' read -r table
 do
-  echo "Get fields: $table";
-  mysql -h ${DBLOC} -u ${USER} --password="${PASSW}" ${DBNAME} -e "select GROUP_CONCAT(COLUMN_NAME SEPARATOR '\`,\`') from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA='${DBNAME}' AND TABLE_NAME='${table}'" > data/field-data.txt;
-  fields=$(tail -1 data/field-data.txt);
-  echo "${table}|\`${fields}\`" >> data/far-fields.txt && \
+  echo "${table}";
+  # Get field names
+  mysql -u ${USER} --password="${PASSW}" ${DBNAME} -e "SELECT GROUP_CONCAT(COLUMN_NAME SEPARATOR ',') from INFORMATION_SCHEMA.COLUMNS where TABLE_SCHEMA='${DBNAME}' AND TABLE_NAME='${table}'" > ${DATADIR}/field-data.txt;
+  fields=$(tail -1 ${DATADIR}/field-data.txt);
+  # Dump table to CSV
+  mysql -u ${USER} --password="${PASSW}" ${DBNAME} -e "SELECT * INTO OUTFILE '${far_dir}/${table}.csv' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\n' FROM ${table}"
+  # Write fieldnames to top of each CSV file
+  echo "${fields}" | cat - ${far_dir}/${table}.csv > ${far_dir}/${table}.tmp && mv ${far_dir}/${table}.tmp ${far_dir}/${table}.csv;
   sleep 0.5;
 done
 
-while IFS='|' read -r table fields
-do
-  echo "${table} : ${fields}" && \
-  mysql -h ${DBLOC} -u ${USER} --password="${PASSW}" ${DBNAME} -e "select CONCAT_WS('~@~',${fields}) FROM ${table}" > data/far-tables/$table.csv && \
-  sleep 1;
-  tail --lines=+2 data/far-tables/$table.csv > data/far-tables/$table.tmp && mv data/far-tables/$table.tmp data/far-tables/$table.csv;
-  echo "${fields}" | cat - data/far-tables/$table.csv > data/far-tables/$table.tmp && mv data/far-tables/$table.tmp data/far-tables/$table.csv;
-done < data/far-fields.txt
+# Cleanup
+rm ${DATADIR}/*.txt;
+chmod 775 ${DATADIR};
+chmod 775 ${far_dir};
