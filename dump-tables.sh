@@ -24,4 +24,6 @@ do
   echo "${table} : ${fields}" && \
   mysql -h ${DBLOC} -u ${USER} --password="${PASSW}" ${DBNAME} -e "select CONCAT_WS('~@~',${fields}) FROM ${table}" > data/far-tables/$table.csv && \
   sleep 1;
+  tail --lines=+2 data/far-tables/$table.csv > data/far-tables/$table.tmp && mv data/far-tables/$table.tmp data/far-tables/$table.csv;
+  echo "${fields}" | cat - data/far-tables/$table.csv > data/far-tables/$table.tmp && mv data/far-tables/$table.tmp data/far-tables/$table.csv;
 done < data/far-fields.txt
