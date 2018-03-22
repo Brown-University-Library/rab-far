@@ -10,7 +10,7 @@ logging.basicConfig(filename=settings['LOGFILE'],level=logging.DEBUG)
 
 mongo = pymongo.MongoClient(settings['MONGO'])
 far_db = mongo.get_database(settings['MONGODB'])
-far_coll = far_db[ 'sqldump' ]
+# far_coll = far_db[ 'sqldump' ]
 
 def parse_datetime(rawDate):
     out = {}
@@ -27,7 +27,8 @@ def main(dataDir):
             rdr = csv.DictReader(f, escapechar="\\")
             data = []
             for row in rdr:
-                row['table'] = filename.split('.csv')[0]
+                # row['table'] = filename.split('.csv')[0]
+                far_coll = far_db[ filename.split('.csv')[0] ]
                 sql_id = row.get('id')
                 if sql_id:
                     row['sql_id'] = sql_id

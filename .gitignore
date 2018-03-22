@@ -2,6 +2,6 @@ __pycache__/
 venv/
 data/*
 tests/data/*
-dump-tables.vars.sh
 *.log
-config.py
+config/settings.py
+*.pdf
