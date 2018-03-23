@@ -1,9 +1,12 @@
-settings = {
+config = {
     'LOGFILE': '',
+    'LOAD_DIR' : '',
     'MONGO_ADDR': '',
-    'MONFO_PASSW' '',
     'MONGO_IDS' : '',
     'MYSQL_USR' : '',
     'MYSQL_PASSW' : '',
-    'MYSQL_FAR' : ''
+    'MYSQL_FAR' : '',
+    'RAB_URL' : '',
+    'RAB_USER' : '',
+    'RAB_PASSW' : ''
 }
