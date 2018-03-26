@@ -1,10 +1,11 @@
 import os
+import csv
 import sys
 import pymongo
 import mysql.connector
 
 from config.settings import config
-from jobs import process_articles
+from etl.jobs import process_articles
 
 def mysql_query(func):
     def query(*args, **kwargs):
@@ -59,14 +60,17 @@ def get_rab_identites():
         raise
     return id_pairs
 
-def save_data(dataToLoad, report, table):
+def save_data(dataToLoad, schema, report, table):
     load_dir = config['LOAD_DIR']
     os.makedirs( os.path.join(load_dir, report['shortid']) )
-    file_name = "{0}_{1}_{2}.txt".format(
+    file_name = "{0}_{1}_{2}.csv".format(
         report['report'], table, report['year'] )
     with open( os.path.join(
         load_dir, report['shortid'], file_name), 'w') as f:
-        f.write(dataToLoad)
+        writer = csv.DictWriter(f, fieldnames=schema)
+        writer.writeheader()
+        for row in dataToLoad:
+            writer.writerow(row)
 
 def map_farids_to_rabids(farRows, rabIds):
     id_map = { bruid : (rabid, shortid)
@@ -94,9 +98,10 @@ def main(year=None,
         for table in farTables[:1]:
             table_job = job_map[table]
             far_data = get_far_table( table,
-                columns=table_job.columns, report_id=report['report'])
+                columns=table_job.columns(), report_id=report['report'])
             data_to_load = table_job.process(report['rabid'], far_data)
-            save_data(data_to_load, report, table)
+            save_data(
+                data_to_load, table_job.rab_schema(), report, table)
     return
 
 if __name__ == '__main__':
